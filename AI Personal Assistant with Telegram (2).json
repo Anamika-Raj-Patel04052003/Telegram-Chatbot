@@ -1,0 +1,505 @@
+{
+  "name": "AI Personal Assistant with Telegram",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -432,
+        0
+      ],
+      "id": "8913c181-76a4-4624-bb10-f4b1f5c3dccf",
+      "name": "Telegram Trigger",
+      "webhookId": "e37940b3-70bc-4dad-8ba9-9d1e1b37e225",
+      "credentials": {
+        "telegramApi": {
+          "id": "lIk8gax5sgh0svqw",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.message }}",
+        "options": {
+          "systemMessage": "=You are a personal assistant that helps user fulfill their requests.\n\nWhen you are asked to perform a task on the current date, please use the current time and date : {{ $now }}\n\nYou should output the result and dont't include any thing unnecessary. Just make sure that you politely answer user question and ask if any other information is required.\n\nIf there is something related to getting the tasks, please make sure that you the tool 'get_many_google_task_tool' to get the tasks as user want. Give a summary of the same without any links etc.\n\nIf there is something related to calender or schedule or events, you have to use tool 'calender_flow_agent' to call the seperate workflow with detailed 'text' ( time is {{  $now }}) so that it can work on the Query."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        288,
+        -48
+      ],
+      "id": "063b7f33-cbc9-4326-a29b-93b547cd8a42",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "5a3fec5e-fc74-43f0-a46e-89ba6e240e06",
+              "name": "message.text",
+              "value": "={{ $json.message.text }}",
+              "type": "string"
+            },
+            {
+              "id": "9193c1c5-f347-43e6-bbcb-a1cbb1b6b8c2",
+              "name": "message.chat.id",
+              "value": "={{ $json.message.chat.id }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -32,
+        32
+      ],
+      "id": "739fa231-4c96-4cb9-bf3b-68d297575327",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "={{ $json.output }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        800,
+        16
+      ],
+      "id": "45181da6-af15-462d-b9f2-47fc79728fca",
+      "name": "Send a text message",
+      "webhookId": "6095de6a-8077-43e6-b5b4-eacf1aa8e286",
+      "credentials": {
+        "telegramApi": {
+          "id": "lIk8gax5sgh0svqw",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.message.chat.id }}",
+        "contextWindowLength": 7
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        400,
+        304
+      ],
+      "id": "dbe43a1d-c3b7-4906-9ecc-560529ccafd2",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.message.text }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "exists",
+                      "singleValue": true
+                    },
+                    "id": "d6c53750-9e48-4d03-a405-185b15dabde9"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "text"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "c8af862d-83bf-4270-b5ad-ea07d3936064",
+                    "leftValue": "={{ $json.message.voice.file_id }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "exists",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "voice"
+            }
+          ]
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.3,
+      "position": [
+        -256,
+        144
+      ],
+      "id": "ebb65b99-9925-4859-bf65-b8a0182e3f7e",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $json.message.voice.file_id }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -128,
+        368
+      ],
+      "id": "3313c9d5-b935-4226-834f-3a67fff7910b",
+      "name": "Get a file",
+      "webhookId": "813254af-e43c-4ee6-9ee5-a426885f388a",
+      "credentials": {
+        "telegramApi": {
+          "id": "lIk8gax5sgh0svqw",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.0-flash-001",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.0-flash-001"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        16,
+        368
+      ],
+      "id": "bee47273-0074-4a8b-a7ff-5b9f6d34dd24",
+      "name": "Transcribe a recording",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "kDd9UTHFFJMoil0Y",
+          "name": "Google Gemini(PaLM) Api account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "68644967-f96e-4ac0-9faf-9004238a8707",
+              "name": "content",
+              "value": "={{ $json.content }}",
+              "type": "object"
+            },
+            {
+              "id": "e795bffb-09a6-47fe-9813-caa0a0f6bde0",
+              "name": "message.chat.id",
+              "value": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        160,
+        368
+      ],
+      "id": "9eb2eb68-1992-4255-a942-22e58b0c50fa",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "task": "MTYyODUzMDk4OTg3MTI5MjEwMjc6MDow",
+        "returnAll": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Return_All', ``, 'boolean') }}",
+        "additionalFields": {
+          "showCompleted": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Show_Completed', ``, 'boolean') }}"
+        }
+      },
+      "type": "n8n-nodes-base.googleTasksTool",
+      "typeVersion": 1,
+      "position": [
+        544,
+        240
+      ],
+      "id": "11654790-cb34-4eef-bab4-500ee727ff33",
+      "name": "get_many_google_task_tool",
+      "credentials": {
+        "googleTasksOAuth2Api": {
+          "id": "Cae4FX7Hk98rKGeq",
+          "name": "Google Tasks account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        304,
+        176
+      ],
+      "id": "724b1186-0e9b-4e97-a5f2-8b85187448a9",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "n2IyGIA7q7McDRPd",
+          "name": "Google Gemini(PaLM) Api account 4"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "description": "This workflow helps to create events in google calendar or get events from the calendar.",
+        "workflowId": {
+          "__rl": true,
+          "value": "iZ5387HbQWJuCzRe",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/iZ5387HbQWJuCzRe",
+          "cachedResultName": "My Google Calender Agent"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "sessionId": "={{ $('Telegram Trigger').item.json.message.chat.id }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "text",
+              "displayName": "text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "sessionId",
+              "displayName": "sessionId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        480,
+        400
+      ],
+      "id": "666d2f51-b97d-468b-8961-521523d3e14d",
+      "name": "Call 'My Google Calender Agent'1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get a file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a file": {
+      "main": [
+        [
+          {
+            "node": "Transcribe a recording",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transcribe a recording": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get_many_google_task_tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call 'My Google Calender Agent'1": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "73fee0b2-5989-4ce2-aa72-7d9799801b16",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1c39e20ef0229deed946d94cbe204bbf95ec2cdfe5b3914c11f3dd9919567e6d"
+  },
+  "id": "rc9qeZn5LnjJqVBn",
+  "tags": [
+    {
+      "updatedAt": "2025-10-31T10:02:09.794Z",
+      "createdAt": "2025-10-31T10:02:09.794Z",
+      "id": "SGBipqTKfE8uXqgT",
+      "name": "Telegram"
+    },
+    {
+      "updatedAt": "2025-10-31T10:05:47.287Z",
+      "createdAt": "2025-10-31T10:05:47.287Z",
+      "id": "izh3syQsAY0Nv7w0",
+      "name": "assistant"
+    }
+  ]
+}
